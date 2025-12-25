@@ -1,0 +1,9 @@
+{
+  "name": "E-Learning SMK LPPMRI 2 KEDUNGREJA",
+  "description": "A professional, role-based E-Learning platform featuring comprehensive management for Admin, Teachers, Students, and Treasurers, powered by Firebase.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
