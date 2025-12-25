@@ -2,9 +2,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, updateDoc, serverTimestamp, getDocFromCache } from 'firebase/firestore';
-import { auth, db } from './firebase';
-import { UserProfile } from './types';
-import { useStore } from './store';
+import { auth, db } from './firebase.ts';
+import { UserProfile } from './types.ts';
+import { useStore } from './store.ts';
 
 interface AuthContextType {
   user: User | null;
@@ -33,25 +33,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    // onAuthStateChanged is usually very fast
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       
       if (currentUser) {
         const docRef = doc(db, 'users', currentUser.uid);
         
-        // 1. SAT SET: Try cache immediately to unblock UI
+        // Coba cache dulu agar UI tidak berkedip (White screen prevention)
         try {
           const cacheSnap = await getDocFromCache(docRef);
           if (cacheSnap.exists()) {
             setProfile(cacheSnap.data() as UserProfile);
-            setLoading(false); // Unblock immediately if cache exists
+            setLoading(false);
           }
         } catch (e) {
-          // No cache, need to wait for server
+          // Cache tidak ada, lanjut tunggu server
         }
 
-        // 2. Refresh from server in background
+        // Ambil data terbaru dari server
         try {
           const serverSnap = await getDoc(docRef);
           if (serverSnap.exists()) {
@@ -62,9 +61,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }
         } catch (err) {
-          console.warn("Background profile sync failed");
+          console.warn("Background profile sync failed", err);
         } finally {
-          setLoading(false); // Ensure loading is off
+          setLoading(false);
         }
       } else {
         setProfile(null);
@@ -79,6 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await auth.signOut();
       setProfile(null);
+      window.location.hash = '/login';
     } catch (error) {
       console.error("Logout failed:", error);
     }
