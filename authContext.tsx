@@ -39,18 +39,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (currentUser) {
         const docRef = doc(db, 'users', currentUser.uid);
         
-        // Coba cache dulu agar UI tidak berkedip (White screen prevention)
+        // PRIORITAS 1: Ambil dari Cache (Kecepatan < 100ms)
         try {
           const cacheSnap = await getDocFromCache(docRef);
           if (cacheSnap.exists()) {
             setProfile(cacheSnap.data() as UserProfile);
-            setLoading(false);
+            setLoading(false); // Langsung tampilkan UI
           }
         } catch (e) {
-          // Cache tidak ada, lanjut tunggu server
+          // Cache tidak ada, tetap loading
         }
 
-        // Ambil data terbaru dari server
+        // PRIORITAS 2: Sync Server di latar belakang
         try {
           const serverSnap = await getDoc(docRef);
           if (serverSnap.exists()) {
@@ -61,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }
         } catch (err) {
-          console.warn("Background profile sync failed", err);
+          console.warn("Auth Sync Warning:", err);
         } finally {
           setLoading(false);
         }
@@ -80,7 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProfile(null);
       window.location.hash = '/login';
     } catch (error) {
-      console.error("Logout failed:", error);
+      console.error("Logout error:", error);
     }
   };
 
@@ -93,8 +93,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (context === undefined) throw new Error('useAuth error');
   return context;
 };
